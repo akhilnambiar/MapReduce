@@ -1,0 +1,205 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf370
+{\fonttbl\f0\fnil\fcharset0 Verdana;}
+{\colortbl;\red255\green255\blue255;}
+{\*\listtable{\list\listtemplateid1\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid1\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid1}
+{\list\listtemplateid2\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid101\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid2}}
+{\*\listoverridetable{\listoverride\listid1\listoverridecount0\ls1}{\listoverride\listid2\listoverridecount0\ls2}}
+\margl1440\margr1440\vieww10800\viewh8400\viewkind0
+\deftab720
+\pard\pardeftab720
+
+\f0\fs26 \cf0 For this project, you're finally going to roll up your sleeves and use MapReduce to answer a big data problem.\
+\uc0\u8232 The question you're going to answer is this: given a word, what other words are statistically associated with it? If I say 'love', or 'death', or 'terrorism', what other words and concepts go with it?\
+\uc0\u8232 A reasonable statistical definition is:\'a0\
+\
+\'a0\'a0\'a0 Let 
+\i A
+\fs22 \sub w
+\i0\fs26 \nosupersub  be the number of occurrences of 
+\i w
+\i0  in the corpus.\
+\'a0\'a0\'a0 Let 
+\i C
+\fs22 \sub w
+\i0\fs26 \nosupersub  be the number of occurrences of 
+\i w
+\i0  in documents that also have the 
+\i target word
+\i0 .\
+\'a0\'a0 Co-occurrence rate :=\'a0 if(
+\i C
+\fs22 \sub w
+\i0\fs26 \nosupersub  > 0) \'a0 
+\i C
+\fs22 \sub w
+\i0\fs26 \nosupersub  * (log(
+\i C
+\fs22 \sub w
+\i0\fs26 \nosupersub ))
+\fs22 \super 3
+\fs26 \nosupersub \'a0 / 
+\i A
+\fs22 \sub w
+\i0\fs26 \nosupersub \'a0\
+\'a0\'a0 \'a0\'a0\'a0 \'a0\'a0\'a0 \'a0\'a0\'a0 \'a0\'a0\'a0 \'a0\'a0\'a0 \'a0\'a0\'a0 \'a0\'a0\'a0 \'a0\'a0\'a0 \'a0else\'a0 0\
+\uc0\u8232 Here is an example that illustrates this definition. Let the target word be "
+\b Dave
+\b0 "\
+\pard\tx220\tx720\pardeftab720\li720\fi-720
+\ls1\ilvl0\cf0 {\listtext	\'95	}\
+{\listtext	\'95	}Doc_ID#1: Randy, Krste, 
+\b Dave
+\b0 \
+{\listtext	\'95	}Doc_ID#2: Randy, Randy, 
+\b Dave
+\b0 \
+{\listtext	\'95	}Doc_ID#3: 
+\b Dave
+\b0 , Krste, Randy\
+\pard\pardeftab720
+\cf0 \
+Occurrences: 
+\i A
+\fs22 \sub Randy
+\i0\fs26 \nosupersub  = 4; 
+\i A
+\fs22 \sub Krste
+\i0\fs26 \nosupersub  = 2; 
+\i A
+\fs22 \sub Dave
+\i0\fs26 \nosupersub  = 3; \
+Co-occurrences: 
+\i C
+\fs22 \sub Randy
+\i0\fs26 \nosupersub  = 4; 
+\i C
+\fs22 \sub Krste
+\i0\fs26 \nosupersub  = 2; \
+Co-occurrence Rate:\
+\pard\tx220\tx720\pardeftab720\li720\fi-720
+\ls2\ilvl0\cf0 {\listtext	\'95	}with 
+\i Randy
+\i0 : 
+\i C
+\fs22 \sub Randy
+\i0\fs26 \nosupersub  * (log(
+\i C
+\fs22 \sub Randy
+\i0\fs26 \nosupersub ))
+\fs22 \super 3
+\fs26 \nosupersub  / 
+\i A
+\fs22 \sub Randy
+\i0\fs26 \nosupersub  = (log(4))
+\fs22 \super 3
+\fs26 \nosupersub  = 2.664\
+{\listtext	\'95	}with 
+\i Krste
+\i0 : 
+\i C
+\fs22 \sub Krste
+\i0\fs26 \nosupersub  * (log(
+\i C
+\fs22 \sub Krste
+\i0\fs26 \nosupersub ))
+\fs22 \super 3
+\fs26 \nosupersub  / 
+\i A
+\fs22 \sub Krste
+\i0\fs26 \nosupersub  = (log(2))
+\fs22 \super 3
+\fs26 \nosupersub  = 0.333\
+\pard\pardeftab720
+\cf0 \
+\uc0\u8232 This does nothing to account for the distance between words however. A fairly straightforward generalization of the problem is to, instead of giving each co-occurence a value of 1, give it a value 
+\i f(d)
+\i0 , where 
+\i d
+\i0  is the minimum distance (number of spaces separating the word occurrences, infinity if one of the words is not in the document) from the word occurrence to the nearest instance of the 
+\i target word
+\i0 . To make our definition cleaner we will restrict our choice of 
+\i f
+\i0  so that 
+\i f
+\i0  sends infinity to 0 and positive numbers to numbers greater than or equal to one. The result of the refinement is as follows:\
+\
+\'a0\'a0\'a0 Let 
+\i W
+\i0  be the set of all instances of a given word in the corpus\
+\'a0\'a0\'a0 Let 
+\i S
+\fs22 \sub w
+\i0\fs26 \nosupersub  be the the sum of 
+\i f(d
+\fs22 \sub w
+\fs26 \nosupersub )
+\i0  over all 
+\i w
+\i0  in 
+\i W
+\i0  .\
+\'a0\'a0 Co-occurrence rate :=\'a0 if(
+\i S
+\fs22 \sub w
+\i0\fs26 \nosupersub  > 0) \'a0 
+\i S
+\fs22 \sub w
+\i0\fs26 \nosupersub  * (log(
+\i S
+\fs22 \sub w
+\i0\fs26 \nosupersub ))
+\fs22 \super 3
+\fs26 \nosupersub \'a0 / |
+\i W
+\i0 |\'a0\
+\'a0\'a0 \'a0\'a0\'a0 \'a0\'a0\'a0 \'a0\'a0\'a0 \'a0\'a0\'a0 \'a0\'a0\'a0 \'a0\'a0\'a0 \'a0\'a0\'a0 \'a0\'a0\'a0 \'a0else\'a0 0\
+\
+Here's another generalization, instead of only looking at how words relate to one another, we can look at how phrases relate to one another. To do that we will look a sequences of 
+\i n
+\i0  words, or an 
+\i n
+\i0 -gram, instead of just one word, which is a 1-gram. To do this we will instead of defining a target word define a target gram, and we will define the distance between two 
+\i n
+\i0 -gram instances to be the number of spaces between their left-most word or infinity if they are not in the same document. Thus, the final refinement of our model is:\
+\
+\'a0\'a0\'a0 Let 
+\i G
+\i0  be the set of all instances of a given 
+\i n
+\i0 -gram in the corpus\
+\'a0\'a0\'a0 Let 
+\i S
+\fs22 \sub g
+\i0\fs26 \nosupersub  be the the sum of 
+\i f(d
+\fs22 \sub g
+\fs26 \nosupersub )
+\i0  over all 
+\i g
+\i0  in 
+\i G
+\i0  .\
+\'a0\'a0 Co-occurrence rate :=\'a0 if(
+\i S
+\fs22 \sub g
+\i0\fs26 \nosupersub  > 0) \'a0 
+\i S
+\fs22 \sub g
+\i0\fs26 \nosupersub  * (log(
+\i S
+\fs22 \sub g
+\i0\fs26 \nosupersub ))
+\fs22 \super 3
+\fs26 \nosupersub \'a0 / |
+\i G
+\i0 |\'a0\
+\'a0\'a0 \'a0\'a0\'a0 \'a0\'a0\'a0 \'a0\'a0\'a0 \'a0\'a0\'a0 \'a0\'a0\'a0 \'a0\'a0\'a0 \'a0\'a0\'a0 \'a0\'a0\'a0 \'a0else\'a0 0\
+\
+Your task is to produce an ordered list of 
+\i n
+\i0 -grams for the target gram sorted by generalized Co-occurrence rate.\
+\
+Your list should be ordered with the biggest co-occurrence rates at the top.\
+\
+This isn't the most sophisticated text-analysis algorithm out there. But it's enough to illustrate what you can do with MapReduce.\
+}
